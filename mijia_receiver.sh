@@ -72,6 +72,7 @@ scanning(){
         print "Scanning for Low Energy Bluetooth devices for $ScanDuration seconds"
         timeout $ScanDuration hcidump --raw --snap-len=32 > raw.txt &
         timeout $ScanDuration hcitool lescan > /dev/null &
+        wait
 }
 
 #Parsing results
@@ -148,7 +149,6 @@ print_initial_values
 clear_files
 rebooting_bluetooth
 scanning
-wait
 parsing
 print_output_files
 update_room1
