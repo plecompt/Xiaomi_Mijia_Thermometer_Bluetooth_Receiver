@@ -111,7 +111,7 @@ update_room1(){
         print "Humidity $Room1Name: $HMDTRoom"
 
         if awk "BEGIN {exit ($TEMPRoom == 0)}"; then
-                curl --silent --output /dev/null "http://192.168.1.68:8080/json.htm?type=command&param=udevice&idx=1&nvalue=0&svalue=$TEMPRoom;$HMDTRoom;0"
+                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=1&nvalue=0&svalue=$TEMPRoom;$HMDTRoom;0"
         else
                 print "No temperature data for $Room1Name. No update send."
         fi
@@ -133,7 +133,7 @@ update_room2(){
         print "Humidity $Room2Name: $HMDTLVRoom"
 
         if awk "BEGIN {exit ($TEMPLVRoom == 0)}"; then
-                curl --silent --output /dev/null "http://192.168.1.68:8080/json.htm?type=command&param=udevice&idx=2&nvalue=0&svalue=$TEMPLVRoom;$HMDTLVRoom;0"
+                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=2&nvalue=0&svalue=$TEMPLVRoom;$HMDTLVRoom;0"
         else
                 print "No temperature data for $Room2Name. No update send."
         fi
