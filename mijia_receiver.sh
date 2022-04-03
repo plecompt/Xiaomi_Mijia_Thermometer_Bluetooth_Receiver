@@ -1,14 +1,16 @@
-
 #!/bin/bash
 
 #Variable Initialisation-----------
 Therm1MacAdress="A4 C1 38 92 34 F6"
 Therm2MacAdress="A4 C1 38 40 2D 58"
+Therm3MacAdress="A4 C1 38 E9 B7 AA"
 Therm1FileName="Room.txt"
 Therm2FileName="LVRoom.txt"
+Therm3FileName="BathRoom.txt"
 Room1Name="Chambre"
 Room2Name="Salon"
-ScanDuration=30
+Room3Name="SDB"
+ScanDuration=45
 Debug=false
 #----------------------------------
 
@@ -37,24 +39,29 @@ cat_debug () {
 print_initial_values(){
         print "Therm1MacAdress='$Therm1MacAdress'"
         print "Therm2MacAdress='$Therm2MacAdress'"
+        print "Therm3MacAdress='$Therm3MacAdress'"
         print "Therm1FileName='$Therm1FileName'"
         print "Therm2FileName='$Therm2FileName'"
+        print "Therm3FileName='$Therm3FileName'"
         print "Room1Name='$Room1Name'"
-        print "Room2FileName='$Room2Name'"
+        print "Room2Name='$Room2Name'"
+        print "Room3Name='$Room3Name'"
 }
 
 #print output files
 print_output_files(){
-        print "---$Therm1FileName---"
+        print "---Therm1FileName---"
         cat_debug $Therm1FileName
-        print "---$Therm2FileName---"
+        print "---Therm2FileName---"
         cat_debug $Therm2FileName
+        print "---Therm3FileName---"
+        cat_debug $Therm3FileName
 }
 
 #deleting potential old files...
 clear_files (){
         print "Deleting potential old files..."
-        rm -rf raw.txt result.txt results.txt output.txt output2.txt $Therm1FileName $Therm2FileName
+        rm -rf raw.txt result.txt results.txt output.txt output2.txt $Therm1FileName $Therm2FileName $Therm3FileName
 }
 
 #rebooting the bluetooth
@@ -92,6 +99,7 @@ parsing(){
         #keeping announcement packet
         grep "$Therm1MacAdress" results.txt > $Therm1FileName
         grep "$Therm2MacAdress" results.txt > $Therm2FileName
+        grep "$Therm3MacAdress" results.txt > $Therm3FileName
         rm -rf results.txt
 }
 
@@ -139,9 +147,33 @@ update_room2(){
         fi
 }
 
+#update room3
+update_room3(){
+        TEMPBathroom=0
+        HMDTBathroom=0
+
+        FirstLineBathroom=$(head -n 1 $Therm3FileName)
+        TempBathroom=${FirstLineBathroom:75:2}
+        HumidityBathroom=${FirstLineBathroom:78:2}
+        print $HumidityBathroom
+        TEMPBathroomHexa=$(( 16#$TempBathroom))
+        TEMPBathroom=$(echo "scale = 1; $TEMPBathroomHexa / 10" | bc)
+        HMDTBathroom=$(( 16#$HumidityBathroom))
+
+        print "Temperature $Room3Name: $TEMPBathroom"
+        print "Humidity $Room3Name: $HMDTBathroom"
+
+        if awk "BEGIN {exit ($TEMPLVRoom == 0)}"; then
+                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=5&nvalue=0&svalue=$TEMPBathroom;$HMDTBathroom;0"
+        else
+                print "No temperature data for $Room3Name. No update send."
+        fi
+}
+
+
 #deleting trash files
 deleting_trash_files(){
-        rm -rf $Therm1FileName $Therm2FileName
+        rm -rf $Therm1FileName $Therm2FileName $Therm3FileName
 }
 
 
@@ -153,4 +185,5 @@ parsing
 print_output_files
 update_room1
 update_room2
+update_room3
 deleting_trash_files
