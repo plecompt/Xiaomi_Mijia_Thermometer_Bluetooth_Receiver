@@ -1,3 +1,4 @@
+
 #!/bin/bash
 
 #Variable Initialisation-----------
@@ -61,7 +62,7 @@ print_output_files(){
 #deleting potential old files...
 clear_files (){
         print "Deleting potential old files..."
-        rm -rf raw.txt result.txt results.txt output.txt output2.txt $Therm1FileName $Therm2FileName $Therm3FileName
+        rm -rf raw.txt result.txt results.txt output.txt output2.txt log.txt $Therm1FileName $Therm2FileName $Therm3FileName
 }
 
 #rebooting the bluetooth
@@ -103,70 +104,32 @@ parsing(){
         rm -rf results.txt
 }
 
-#update room1
-update_room1(){
+#Update room
+update_room(){
+        #ThermFileName $1
+        #RoomName $2
+        #IDX $3
+
         TEMPRoom=0
         HMDTRoom=0
 
-        FirstLineRoom=$(head -n 1 $Therm1FileName)
-        Temp=${FirstLineRoom:75:2}
-        Humidity=${FirstLineRoom:78:2}
-        TEMPRoomHexa=$(( 16#$Temp))
+        FirstLineRoom=$(head -n 1 $1)
+        TempRoom=${FirstLineRoom:75:2}
+        HumidityRoom=${FirstLineRoom:78:2}
+        TEMPRoomHexa=$(( 16#$TempRoom))
         TEMPRoom=$(echo "scale = 1; $TEMPRoomHexa / 10" | bc)
-        HMDTRoom=$(( 16#$Humidity))
+        HMDTRoom=$(( 16#$HumidityRoom))
 
-        print "Temperature $Room1Name: $TEMPRoom"
-        print "Humidity $Room1Name: $HMDTRoom"
+        print "Temperature $2: $TEMPRoom"
+        print "Humidity $2: $HMDTRoom"
+        print "Querry $2: http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=$3&nvalue=0&svalue=$TEMPRoom;$HMDTRoom;0"
 
         if awk "BEGIN {exit ($TEMPRoom == 0)}"; then
-                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=1&nvalue=0&svalue=$TEMPRoom;$HMDTRoom;0"
+                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=$3&nvalue=0&svalue=$TEMPRoom;$HMDTRoom;0"
+                return 0
         else
-                print "No temperature data for $Room1Name. No update send."
-        fi
-}
-
-#update room2
-update_room2(){
-        TEMPLVRoom=0
-        HMDTLVRoom=0
-
-        FirstLineLVRoom=$(head -n 1 $Therm2FileName)
-        TempLVRoom=${FirstLineLVRoom:75:2}
-        HumidityLVRoom=${FirstLineLVRoom:78:2}
-        TEMPLVRoomHexa=$(( 16#$TempLVRoom))
-        TEMPLVRoom=$(echo "scale = 1; $TEMPLVRoomHexa / 10" | bc)
-        HMDTLVRoom=$(( 16#$HumidityLVRoom))
-
-        print "Temperature $Room2Name: $TEMPLVRoom"
-        print "Humidity $Room2Name: $HMDTLVRoom"
-
-        if awk "BEGIN {exit ($TEMPLVRoom == 0)}"; then
-                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=2&nvalue=0&svalue=$TEMPLVRoom;$HMDTLVRoom;0"
-        else
-                print "No temperature data for $Room2Name. No update send."
-        fi
-}
-
-#update room3
-update_room3(){
-        TEMPBathroom=0
-        HMDTBathroom=0
-
-        FirstLineBathroom=$(head -n 1 $Therm3FileName)
-        TempBathroom=${FirstLineBathroom:75:2}
-        HumidityBathroom=${FirstLineBathroom:78:2}
-        print $HumidityBathroom
-        TEMPBathroomHexa=$(( 16#$TempBathroom))
-        TEMPBathroom=$(echo "scale = 1; $TEMPBathroomHexa / 10" | bc)
-        HMDTBathroom=$(( 16#$HumidityBathroom))
-
-        print "Temperature $Room3Name: $TEMPBathroom"
-        print "Humidity $Room3Name: $HMDTBathroom"
-
-        if awk "BEGIN {exit ($TEMPLVRoom == 0)}"; then
-                curl --silent --output /dev/null "http://192.168.1.100:8080/json.htm?type=command&param=udevice&idx=5&nvalue=0&svalue=$TEMPBathroom;$HMDTBathroom;0"
-        else
-                print "No temperature data for $Room3Name. No update send."
+                print "No temperature data for $2. No update send."
+                return 222
         fi
 }
 
@@ -176,6 +139,26 @@ deleting_trash_files(){
         rm -rf $Therm1FileName $Therm2FileName $Therm3FileName
 }
 
+update_rooms() {
+
+        RES=0
+
+        update_room "$Therm1FileName" "$Room1Name" "1" #BedRoom
+        RES=$((RES+$?))
+        update_room "$Therm2FileName" "$Room2Name" "2" #LivingRoom
+        RES=$((RES+$?))
+        update_room "$Therm3FileName" "$Room3Name" "5" #Bathroom
+        RES=$((RES+$?))
+
+        print "RES=$RES"
+
+        if [ $RES -eq 666 ]; then
+                print "Error, rebooting..."
+                date > rebooted.txt
+                print "Had to reboot cause RES=$RES" > rebooted.txt
+                shutdown -r now
+        fi
+}
 
 print_initial_values
 clear_files
@@ -183,7 +166,5 @@ rebooting_bluetooth
 scanning
 parsing
 print_output_files
-update_room1
-update_room2
-update_room3
+update_rooms
 deleting_trash_files
