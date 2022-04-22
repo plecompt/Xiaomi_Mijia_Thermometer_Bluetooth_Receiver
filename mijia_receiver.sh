@@ -153,8 +153,8 @@ update_rooms() {
 
         if [ $RES -eq 666 ]; then
                 print "Error, rebooting..."
-                date > rebooted.txt
-                print "Had to reboot cause RES=$RES" > rebooted.txt
+                date >> rebooted.txt
+                print "Had to reboot cause RES=$RES" >> rebooted.txt
                 shutdown -r now
         fi
 }
