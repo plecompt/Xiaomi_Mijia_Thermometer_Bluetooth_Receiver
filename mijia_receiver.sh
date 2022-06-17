@@ -37,6 +37,8 @@ cat_debug () {
 
 #print initial values
 print_initial_values(){
+        dt=$(date '+%d/%m/%Y %H:%M:%S');
+        echo $dt
         print "Therm1MacAdress='$Therm1MacAdress'"
         print "Therm2MacAdress='$Therm2MacAdress'"
         print "Therm3MacAdress='$Therm3MacAdress'"
@@ -113,7 +115,8 @@ update_room(){
         HMDTRoom=0
 
         FirstLineRoom=$(head -n 1 $1)
-        TempRoom=${FirstLineRoom:75:2}
+        TempRoom=${FirstLineRoom:72:5} #Looking for 2 int16
+        printf -v TempRoom '%s' $TempRoom #Suppressing extra space
         HumidityRoom=${FirstLineRoom:78:2}
         TEMPRoomHexa=$(( 16#$TempRoom))
         TEMPRoom=$(echo "scale = 1; $TEMPRoomHexa / 10" | bc)
@@ -153,9 +156,9 @@ update_rooms() {
 
         if [ $RES -eq 666 ]; then
                 print "Error, rebooting..."
-                date >> rebooted.txt
+                date > rebooted.txt
                 print "Had to reboot cause RES=$RES" >> rebooted.txt
-                shutdown -r now
+                #shutdown -r now
         fi
 }
 
